@@ -1,5 +1,9 @@
+FROM xtacocorex/gadget-chip-dt-overlays as build
+
 # BASE OFF THE PYTHON IO CHIPTAINER
 FROM xtacocorex/chiptainer_alpine_edge
+
+COPY --from=build /lib/firmware/nextthingco /lib/firmware/nextthingco
 
 RUN apk update --no-cache && \
     apk add --no-cache make && \
@@ -14,31 +18,10 @@ RUN apk update --no-cache && \
     apk add --no-cache python-dev && \
     apk add --no-cache py-setuptools && \
     # GET TOOLS FOR I2C
-    apk add --no-cache i2c-tools && \
     apk add --no-cache py-smbus && \
     # GET PIP FOR SPIDEV
     apk add --no-cache py2-pip && \
-    pip install --upgrade pip && \
     pip install spidev && \
-    # DOWNLOAD SOURCE CODE FOR DEVICE TREE COMPILER NEEDED FOR CHIP_IO
-    git clone https://github.com/NextThingCo/dtc.git && \
-    # BUILD AND INSTALL THE DEVICE TREE COMPILER
-    cd dtc && \
-    make && \
-    make install PREFIX=/usr && \
-    # REMOVE THE DEVICE TREE COMPILER SOURCE CODE NOW THAT WE'VE BUILT IT
-    cd .. && \
-    rm dtc -rf && \
-    # DOWNLOAD NTC'S CHIP OVERLAY CODE
-    git clone https://github.com/NextThingCo/CHIP-dt-overlays.git && \
-    cd CHIP-dt-overlays && \
-    make && \
-    # MAKE DIRECTORIES FOR THE DTBO AND COPY OVER
-    mkdir -p /lib/firmware/nextthingco/chip/ && \
-    mkdir -p /lib/firmware/nextthingco/chip/early/ && \
-    cp samples/*.dtbo /lib/firmware/nextthingco/chip/ && \
-    cp firmware/early/*.dtbo /lib/firmware/nextthingco/chip/early/ && \
-    cd ../ && \
     # DOWNLOAD THE LATEST CHIP_IO SOURCE CODE
     git clone https://github.com/xtacocorex/CHIP_IO.git && \
     # INSTALL THE CHIP_IO LIBRARY FROM THE PROPER DIRECTORY
@@ -54,17 +37,17 @@ RUN apk update --no-cache && \
     cd ../ && \
     rm -rf Adafruit_Python_GPIO && \
     # REMOVE BUILD TOOLS, WHICH ARE NO LONGER NEEDED AFTER INSTALLATION
-    apk del flex && \
-    apk del bison && \
-    apk del py-setuptools && \
+    apk del make && \
     apk del gcc && \
     apk del g++ && \
-    apk del make && \
+    apk del flex && \
+    apk del bison && \
+    apk del build-base && \
     apk del linux-headers && \
-    apk del py2-pip && \
     apk del git && \
+    apk del python-dev && \
+    apk del py-setuptools && \
+    apk del py2-pip && \
     # REMOVE CACHE
     rm -rf /var/cache/apk/*
 
-# THE ENTRY POINT
-ENTRYPOINT /bin/sh
